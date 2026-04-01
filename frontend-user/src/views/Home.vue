@@ -41,8 +41,47 @@
         <h2>精选推荐</h2>
         <router-link to="/category" class="view-all">查看全部 →</router-link>
       </div>
-      <div class="book-grid">
-        <div v-for="book in displayBooks" :key="book.id" class="book-card" @click="goToDetail(book.id)">
+
+      <!-- Search Box -->
+      <div class="search-section">
+        <h3 class="search-title">搜索图书</h3>
+        <div class="list-search-box">
+          <input
+            v-model="searchKeyword"
+            type="text"
+            placeholder="输入书名搜索..."
+            @input="handleSearch"
+          />
+        </div>
+      </div>
+
+      <!-- Category Filter -->
+      <div class="category-filter">
+        <button
+          v-for="cat in booksStore.categories"
+          :key="cat"
+          class="filter-btn"
+          :class="{ active: selectedCategory === cat }"
+          @click="selectCategory(cat)"
+        >
+          {{ cat }}
+        </button>
+      </div>
+
+      <!-- Empty Result -->
+      <div v-if="filteredBooks.length === 0" class="empty-result">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9.172 16.172a4 4 0 0 1 5.656 0"/>
+          <path d="M12 17v.01"/>
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M8 10s.5-2 4-2 4 2 4 2"/>
+        </svg>
+        <p>未找到相关图书</p>
+        <button class="clear-btn" @click="clearSearch">清除搜索</button>
+      </div>
+
+      <div v-else class="book-grid">
+        <div v-for="book in filteredBooks" :key="book.id" class="book-card" @click="goToDetail(book.id)">
           <div class="book-cover">
             <img class="cover-img" :src="book.cover" :alt="book.title" />
             <div class="book-overlay">
@@ -91,6 +130,8 @@ const openLoginModal = inject('openLoginModal')
 
 const keyword = ref('')
 const searchResult = ref(null)
+const searchKeyword = ref('')
+const selectedCategory = ref('全部')
 const defaultIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
 const catIcons = {
   '技术': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
@@ -103,7 +144,25 @@ const catIcons = {
 
 const displayBooks = computed(() => searchResult.value || booksStore.books)
 
+const filteredBooks = computed(() => {
+  let result = booksStore.books
+  if (selectedCategory.value !== '全部') {
+    result = result.filter(b => b.category === selectedCategory.value)
+  }
+  if (searchKeyword.value) {
+    const kw = searchKeyword.value.toLowerCase()
+    result = result.filter(b => b.title.toLowerCase().includes(kw))
+  }
+  return result
+})
+
 const search = () => { searchResult.value = booksStore.searchBooks(keyword.value) }
+const handleSearch = () => {}
+const selectCategory = (cat) => { selectedCategory.value = cat }
+const clearSearch = () => {
+  searchKeyword.value = ''
+  selectedCategory.value = '全部'
+}
 const goToDetail = (id) => router.push(`/book/${id}`)
 const addToCart = (book) => {
   if (!userStore.isLoggedIn) {
@@ -435,9 +494,109 @@ const addToCart = (book) => {
   color: #1a1a2e;
 }
 
+/* Search Section */
+.search-section {
+  margin-bottom: 30px;
+}
+
+.search-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #1a1a2e;
+}
+
+.list-search-box {
+  max-width: 500px;
+}
+
+.list-search-box input {
+  width: 100%;
+  padding: 14px 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.3s;
+  background: white;
+}
+
+.list-search-box input:focus {
+  outline: none;
+  border-color: #e94560;
+  box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.1);
+}
+
+/* Category Filter */
+.category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.filter-btn {
+  padding: 10px 24px;
+  border: 2px solid #e9ecef;
+  border-radius: 30px;
+  background: white;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.filter-btn:hover {
+  border-color: #e94560;
+  color: #e94560;
+}
+
+.filter-btn.active {
+  background: #e94560;
+  border-color: #e94560;
+  color: white;
+}
+
+/* Empty Result */
+.empty-result {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.empty-result svg {
+  width: 80px;
+  height: 80px;
+  color: #dee2e6;
+  margin-bottom: 20px;
+}
+
+.empty-result p {
+  font-size: 18px;
+  color: #6c757d;
+  margin-bottom: 24px;
+}
+
+.clear-btn {
+  padding: 12px 28px;
+  background: #1a1a2e;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.clear-btn:hover {
+  background: #e94560;
+  transform: scale(1.05);
+}
+
 @media (max-width: 768px) {
   .hero h1 { font-size: 36px; }
   .hero-visual { display: none; }
   .category-cards { grid-template-columns: repeat(2, 1fr); }
+  .category-filter { justify-content: center; }
+  .list-search-box { max-width: 100%; }
 }
 </style>

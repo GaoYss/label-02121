@@ -35,13 +35,40 @@
       </div>
     </section>
 
+    <!-- Search and Filter Section -->
+    <section class="search-filter container">
+      <div class="search-container">
+        <h3>搜索图书</h3>
+        <input 
+          v-model="searchQuery" 
+          placeholder="输入书名搜索..." 
+          @input="handleSearch"
+          class="search-input"
+        />
+      </div>
+      <div class="category-filter">
+        <button 
+          v-for="cat in booksStore.categories" 
+          :key="cat"
+          :class="['category-btn', { active: selectedCategory === cat }]"
+          @click="selectCategory(cat)"
+        >
+          {{ cat }}
+        </button>
+      </div>
+    </section>
+
     <!-- Featured Books -->
     <section class="featured container">
       <div class="section-header">
         <h2>精选推荐</h2>
         <router-link to="/category" class="view-all">查看全部 →</router-link>
       </div>
-      <div class="book-grid">
+      <div v-if="displayBooks.length === 0" class="no-results">
+        <p>未找到相关图书</p>
+        <button class="clear-btn" @click="clearFilters">清除搜索</button>
+      </div>
+      <div v-else class="book-grid">
         <div v-for="book in displayBooks" :key="book.id" class="book-card" @click="goToDetail(book.id)">
           <div class="book-cover">
             <img class="cover-img" :src="book.cover" :alt="book.title" />
@@ -91,6 +118,8 @@ const openLoginModal = inject('openLoginModal')
 
 const keyword = ref('')
 const searchResult = ref(null)
+const searchQuery = ref('')
+const selectedCategory = ref('全部')
 const defaultIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>'
 const catIcons = {
   '技术': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
@@ -101,7 +130,32 @@ const catIcons = {
   '艺术': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="13" r="2"/><circle cx="6" cy="12" r="2.5"/><circle cx="10" cy="18.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.82-.13 2.66-.36.55-.15.84-.82.53-1.3a5 5 0 0 1 2.38-7.1c.69-.27 1.04-1.08.67-1.73A10 10 0 0 0 12 2z"/></svg>'
 }
 
-const displayBooks = computed(() => searchResult.value || booksStore.books)
+const displayBooks = computed(() => {
+  let result = booksStore.books
+  
+  if (selectedCategory.value !== '全部') {
+    result = result.filter(b => b.category === selectedCategory.value)
+  }
+  
+  if (searchQuery.value) {
+    const kw = searchQuery.value.toLowerCase()
+    result = result.filter(b => b.title.toLowerCase().includes(kw))
+  }
+  
+  return result
+})
+
+const handleSearch = () => {
+}
+
+const selectCategory = (category) => {
+  selectedCategory.value = category
+}
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  selectedCategory.value = '全部'
+}
 
 const search = () => { searchResult.value = booksStore.searchBooks(keyword.value) }
 const goToDetail = (id) => router.push(`/book/${id}`)
@@ -121,6 +175,92 @@ const addToCart = (book) => {
 </script>
 
 <style scoped>
+.search-filter {
+  margin-bottom: 60px;
+  padding: 32px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.search-container h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 16px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.3s;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #e94560;
+  box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.1);
+}
+
+.category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.category-btn {
+  padding: 10px 24px;
+  border: 2px solid #e9ecef;
+  background: white;
+  color: #495057;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.category-btn:hover {
+  border-color: #e94560;
+  color: #e94560;
+}
+
+.category-btn.active {
+  background: #e94560;
+  border-color: #e94560;
+  color: white;
+}
+
+.no-results {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.no-results p {
+  font-size: 18px;
+  color: #6c757d;
+  margin-bottom: 24px;
+}
+
+.clear-btn {
+  padding: 12px 32px;
+  background: #1a1a2e;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.clear-btn:hover {
+  background: #e94560;
+  transform: scale(1.05);
+}
+
 .hero {
   padding: 80px 0 100px;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
